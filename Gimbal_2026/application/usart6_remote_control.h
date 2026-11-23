@@ -66,6 +66,7 @@ typedef struct
     uint8_t sequence;
     float yaw_angle_deg;
     float yaw_speed_rpm;
+    uint16_t yaw_encoder; /* A7 bytes 12..13, little-endian raw GM6020 Ecd. */
 } usart1_gimbal_tx_status_t;
 
 typedef struct

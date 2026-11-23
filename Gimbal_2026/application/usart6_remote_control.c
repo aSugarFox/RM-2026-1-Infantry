@@ -570,6 +570,7 @@ void usart1_send_gimbal_status(const usart1_gimbal_tx_status_t *status)
     tx_buffer[3] = status->sequence;
     memcpy(&tx_buffer[4], &status->yaw_angle_deg, sizeof(float));
     memcpy(&tx_buffer[8], &status->yaw_speed_rpm, sizeof(float));
+    memcpy(&tx_buffer[12], &status->yaw_encoder, sizeof(status->yaw_encoder));
     for (i = 0u; i < (USART1_FRAME_LENGTH - 1u); i++)
     {
         tx_buffer[USART1_FRAME_LENGTH - 1u] += tx_buffer[i];

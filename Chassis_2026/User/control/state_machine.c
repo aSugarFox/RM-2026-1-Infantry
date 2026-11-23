@@ -30,9 +30,12 @@ void state_machine_update(state_machine_t *sm, const RC_ctrl_t *rc_data)
 {
     uint8_t remote_alive;
 #if (INFANTRY_SLIPRING_TEST == 0u)
-    const usart1_gimbal_status_t *gimbal_status = get_usart1_gimbal_status();
-    uint32_t now = HAL_GetTick();
+    usart1_gimbal_status_t status_snapshot;
+    const usart1_gimbal_status_t *gimbal_status = &status_snapshot;
+    uint32_t now;
     uint8_t gimbal_status_alive;
+    uint8_t gimbal_imu_ready;
+    uint8_t gimbal_encoder_ready;
 #endif
 
     if ((sm == 0) || (rc_data == 0)) return;
@@ -40,6 +43,11 @@ void state_machine_update(state_machine_t *sm, const RC_ctrl_t *rc_data)
     sm->imu_ready = Infantry_IMU_IsReady();
     remote_alive = usart1_remote_is_online();
 #if (INFANTRY_SLIPRING_TEST == 0u)
+    get_usart1_gimbal_status_snapshot(&status_snapshot);
+    now = HAL_GetTick();
+    gimbal_imu_ready = (uint8_t)((gimbal_status->flags & INFANTRY_GIMBAL_FLAG_IMU_READY) != 0u);
+    gimbal_encoder_ready = (uint8_t)(((gimbal_status->flags & INFANTRY_GIMBAL_FLAG_ENCODER_READY) != 0u) &&
+                                     (gimbal_status->yaw_encoder < 8192u));
     gimbal_status_alive = (uint8_t)((gimbal_status->update_tick != 0u) &&
                                     ((uint32_t)(now - gimbal_status->update_tick) <= INFANTRY_LINK_TIMEOUT_MS));
 #endif
@@ -51,7 +59,7 @@ void state_machine_update(state_machine_t *sm, const RC_ctrl_t *rc_data)
     }
     else if (switch_is_mid(rc_data->rc.s[RC_S_LEFT]) && (sm->imu_ready != 0u)
 #if (INFANTRY_SLIPRING_TEST == 0u)
-             && (gimbal_status_alive != 0u) && (get_usart1_gimbal_imu_ready() != 0u)
+             && (gimbal_status_alive != 0u) && (gimbal_imu_ready != 0u) && (gimbal_encoder_ready != 0u)
 #endif
             )
     {
@@ -61,7 +69,7 @@ void state_machine_update(state_machine_t *sm, const RC_ctrl_t *rc_data)
     else if (switch_is_down(rc_data->rc.s[RC_S_LEFT]) &&
              (sm->imu_ready != 0u) &&
              (gimbal_status_alive != 0u) &&
-             (get_usart1_gimbal_imu_ready() != 0u))
+             (gimbal_imu_ready != 0u) && (gimbal_encoder_ready != 0u))
     {
         sm->system_mode = SYSTEM_SMALL_GYRO;
     }
@@ -77,22 +85,31 @@ void state_machine_update(state_machine_t *sm, const RC_ctrl_t *rc_data)
                           ((CAN_chassis_motors_online() == 0u) ? 2u : 0u));
 #if (INFANTRY_SLIPRING_TEST == 0u)
     if (gimbal_status_alive == 0u) sm->fault |= 4u;
-    else if (get_usart1_gimbal_imu_ready() == 0u) sm->fault |= 8u;
+    else if (gimbal_imu_ready == 0u) sm->fault |= 8u;
+    if ((gimbal_status_alive != 0u) && (gimbal_encoder_ready == 0u)) sm->fault |= 16u;
 #endif
 }
 
 void state_machine_execute(state_machine_t *sm)
 {
 #if (INFANTRY_SLIPRING_TEST == 0u)
-    const usart1_gimbal_status_t *gimbal_status = get_usart1_gimbal_status();
-    uint32_t now = HAL_GetTick();
+    usart1_gimbal_status_t status_snapshot;
+    const usart1_gimbal_status_t *gimbal_status = &status_snapshot;
+    uint32_t now;
     uint8_t gimbal_status_alive;
+    uint8_t gimbal_imu_ready;
+    uint8_t gimbal_encoder_ready;
 #endif
     static uint8_t imu_ready_beeped;
 
     if (sm == 0) return;
 
 #if (INFANTRY_SLIPRING_TEST == 0u)
+    get_usart1_gimbal_status_snapshot(&status_snapshot);
+    now = HAL_GetTick();
+    gimbal_imu_ready = (uint8_t)((gimbal_status->flags & INFANTRY_GIMBAL_FLAG_IMU_READY) != 0u);
+    gimbal_encoder_ready = (uint8_t)(((gimbal_status->flags & INFANTRY_GIMBAL_FLAG_ENCODER_READY) != 0u) &&
+                                     (gimbal_status->yaw_encoder < 8192u));
     gimbal_status_alive = (uint8_t)((gimbal_status->update_tick != 0u) &&
                                     ((uint32_t)(now - gimbal_status->update_tick) <= INFANTRY_LINK_TIMEOUT_MS));
 #endif
@@ -108,11 +125,14 @@ void state_machine_execute(state_machine_t *sm)
     /* Refresh the measured angle even when stopped; MOVE must not show an old
      * drive angle after the gimbal or chassis is moved while disabled. */
     if ((sm->imu_ready != 0u) && (gimbal_status_alive != 0u) &&
-        (get_usart1_gimbal_imu_ready() != 0u))
+        (gimbal_imu_ready != 0u) && (gimbal_encoder_ready != 0u))
     {
+        /* Cast before subtraction: Ecd below front zero is a negative angle.
+         * The 13-bit absolute encoder wraps once per revolution; no turn count
+         * or IMU heading subtraction is needed for translating along the muzzle. */
         yaw_angle = wrap_deg(INFANTRY_CHASSIS_YAW_SIGN *
-                             (gimbal_status->yaw_angle_deg - Infantry_IMU_GetYawDeg()) +
-                             INFANTRY_GIMBAL_BOOT_OFFSET_DEG);
+                             ((float)gimbal_status->yaw_encoder - (float)INFANTRY_YAW_FRONT_ECD) *
+                             (360.0f / 8192.0f));
     }
 #endif
 
@@ -129,7 +149,7 @@ void state_machine_execute(state_machine_t *sm)
 #if (INFANTRY_SLIPRING_TEST != 0u)
     RC_Control_Chassis(CHASSIS_VECTOR_NO_FOLLOW_YAW);
 #else
-    if ((gimbal_status_alive != 0u) && (get_usart1_gimbal_imu_ready() != 0u))
+    if ((gimbal_status_alive != 0u) && (gimbal_imu_ready != 0u) && (gimbal_encoder_ready != 0u))
     {
         RC_Control_Chassis(CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW);
     }

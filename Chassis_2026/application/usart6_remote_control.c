@@ -124,6 +124,7 @@
       usart1_gimbal_status.sequence = frame[3];
       memcpy((void *)&usart1_gimbal_status.yaw_angle_deg, &frame[4], sizeof(float));
       memcpy((void *)&usart1_gimbal_status.yaw_speed_rpm, &frame[8], sizeof(float));
+      memcpy((void *)&usart1_gimbal_status.yaw_encoder, &frame[12], sizeof(uint16_t));
       usart1_gimbal_status.update_tick = HAL_GetTick();
 
       /* yaw_angle is the relative angle owned by the control loop, not this ISR. */
@@ -343,6 +344,15 @@
   uint32_t get_usart1_gimbal_gyro_update_tick(void)
   {
       return usart1_gimbal_gyro_update_tick;
+  }
+
+  void get_usart1_gimbal_status_snapshot(usart1_gimbal_status_t *status)
+  {
+      /* Keep encoder, online flags and reception time from the same RX frame. */
+      uint32_t irq_mask = __get_PRIMASK();
+      __disable_irq();
+      *status = usart1_gimbal_status;
+      __set_PRIMASK(irq_mask);
   }
 
   const usart1_gimbal_status_t *get_usart1_gimbal_status(void)

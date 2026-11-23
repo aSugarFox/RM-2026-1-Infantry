@@ -149,5 +149,6 @@
 #define INFANTRY_GIMBAL_FLAG_READY             (1u << 1)
 #define INFANTRY_GIMBAL_FLAG_SHOOT_READY       (1u << 2)
 #define INFANTRY_GIMBAL_FLAG_ESTOP             (1u << 3)
+#define INFANTRY_GIMBAL_FLAG_ENCODER_READY    (1u << 4) /* A7 bytes 12..13 valid. */
 
 #endif

@@ -48,11 +48,12 @@
 #define INFANTRY_CHASSIS_SPEED_KP             9.5f
 #define INFANTRY_CHASSIS_SPEED_KP_M2          9.0f
 #define INFANTRY_CHASSIS_MAX_CURRENT          3000.0f
-/* Same IMU-to-wheel heading convention as old CHASSIS_GYRO_YAW_SIGN.
- * Apply to BOTH IMU headings before taking gimbal minus chassis. */
+/* Calibrated with muzzle facing chassis front: Ecd=2935.
+ * Left +90: 4975; right -90: 840; rear: 7005 (2026-11-23).
+ * Encoder increases to the left; the wheel transform uses right-positive yaw.
+ * This fixed mechanical zero does not depend on either IMU's startup heading. */
+#define INFANTRY_YAW_FRONT_ECD                2935u
 #define INFANTRY_CHASSIS_YAW_SIGN             (-1.0f)
-/* Both IMUs zero at boot: align muzzle with chassis front and keep still. */
-#define INFANTRY_GIMBAL_BOOT_OFFSET_DEG        0.0f
 
 /* Status indication. */
 #define INFANTRY_LED_RED                      0xFFFF0000u
@@ -84,5 +85,6 @@
 #define INFANTRY_GIMBAL_FLAG_READY            (1u << 1)
 #define INFANTRY_GIMBAL_FLAG_SHOOT_READY      (1u << 2)
 #define INFANTRY_GIMBAL_FLAG_ESTOP            (1u << 3)
+#define INFANTRY_GIMBAL_FLAG_ENCODER_READY    (1u << 4) /* A7 bytes 12..13 valid. */
 
 #endif

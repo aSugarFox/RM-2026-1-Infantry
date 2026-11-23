@@ -45,6 +45,7 @@ typedef struct
     uint8_t sequence;
     float yaw_angle_deg;
     float yaw_speed_rpm;
+    uint16_t yaw_encoder; /* A7 bytes 12..13, little-endian raw GM6020 Ecd. */
     uint32_t update_tick;
 } usart1_gimbal_status_t;
 
@@ -65,6 +66,7 @@ float get_usart1_gimbal_gyro_comp_speed_rpm(void);
 uint8_t get_usart1_gimbal_gyro_enable(void);
 uint32_t get_usart1_gimbal_gyro_update_tick(void);
 const usart1_gimbal_status_t *get_usart1_gimbal_status(void);
+void get_usart1_gimbal_status_snapshot(usart1_gimbal_status_t *status);
 uint8_t get_usart1_gimbal_imu_ready(void);
 uint8_t get_usart1_gimbal_ready(void);
 void data_to_usart1(const usart1_tx_status_t *status);

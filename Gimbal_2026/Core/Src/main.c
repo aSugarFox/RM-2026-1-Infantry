@@ -411,6 +411,11 @@ int main(void)
     link_status.sequence = status_sequence++;
     link_status.yaw_angle_deg = Infantry_IMU_GetYawDeg();
     link_status.yaw_speed_rpm = Infantry_IMU_GetGyroZRpm();
+    link_status.yaw_encoder = get_yaw_gimbal_motor_measure_point()->ecd;
+    /* Publish raw joint feedback even while stopped, for muzzle-relative drive.
+     * This flag also distinguishes new firmware from old zero-filled A7 frames. */
+    if ((CAN_yaw_motor_online() != 0u) && (link_status.yaw_encoder < 8192u))
+      link_status.flags |= INFANTRY_GIMBAL_FLAG_ENCODER_READY;
     usart1_send_gimbal_status(&link_status);
 #endif
 
