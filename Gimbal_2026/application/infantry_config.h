@@ -111,7 +111,7 @@
 #define INFANTRY_AUTO_AIM_REQUEST(rc)          ((rc)->mouse.press_r != 0u)
 #define INFANTRY_DEBUG_PERIOD_MS              200u
 /* 1: only dual-IMU telemetry; 0: restore LINK/MOVE/SYS/YAW/SHOT/DM. */
-#define INFANTRY_DEBUG_IMU_ONLY               1u
+#define INFANTRY_DEBUG_IMU_ONLY               0u
 /* Temporarily append chassis direction feedback to the IMU log. */
 #define INFANTRY_DEBUG_DRIVE_DIRECTION        1u
 /* Vision offsets are signed centi-degrees. */
