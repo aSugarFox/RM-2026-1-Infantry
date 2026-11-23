@@ -738,14 +738,12 @@ void RC_Control_Chassis(chassis_mode_e mode)
     int16_t z_set = (chassis_small_gyro_enable != 0u) ?
                     (int16_t)chassis_small_gyro_target_rpm : 0;
     int16_t dial = rc_data->rc.ch[4];
-    int16_t wz_set;
     if (dial > 660) dial = 660;
     if (dial < -660) dial = -660;
     /* Manual dial rotation; left-down keeps the fixed small-gyro speed. */
     if ((chassis_small_gyro_enable == 0u) &&
         ((dial > INFANTRY_RC_DEADZONE) || (dial < -INFANTRY_RC_DEADZONE)))
         z_set = (int16_t)((float)dial * INFANTRY_CHASSIS_DIAL_SCALE);
-    wz_set = z_set; /* Right stick still belongs exclusively to the gimbal. */
     if ((rc_data->rc.ch[3] <= INFANTRY_RC_DEADZONE) &&
         (rc_data->rc.ch[3] >= -INFANTRY_RC_DEADZONE)) vx_set = 0;
     if ((rc_data->rc.ch[2] <= INFANTRY_RC_DEADZONE) &&
@@ -757,9 +755,8 @@ void RC_Control_Chassis(chassis_mode_e mode)
               (int16_t)(rc_data->rc.ch[3] * INFANTRY_TEST_CHASSIS_RC_SCALE) : 0;
     vy_set = ((rc_data->rc.ch[2] > INFANTRY_TEST_RC_DEADZONE) ||
               (rc_data->rc.ch[2] < -INFANTRY_TEST_RC_DEADZONE)) ?
-              -(int16_t)(rc_data->rc.ch[2] * INFANTRY_TEST_CHASSIS_RC_SCALE) : 0;
+              (int16_t)(rc_data->rc.ch[2] * INFANTRY_TEST_CHASSIS_RC_SCALE) : 0;
     z_set = 0;
-    wz_set = 0;
 #endif
     if ((vx_set == 0) && (vy_set == 0) && (z_set == 0))
     {
@@ -768,37 +765,23 @@ void RC_Control_Chassis(chassis_mode_e mode)
         return;
     }
 
-    if(mode==CHASSIS_VECTOR_RAW)
+    /* vx 向前为正，vy 向右为正；先把枪口坐标转换到底盘坐标。 */
+    float vx_chassis = (float)vx_set;
+    float vy_chassis = (float)vy_set;
+    float spin_rpm = (float)z_set * MOTOR_DISTANCE_TO_CENTER;
+    if (mode == CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW)
     {
-        motor1_set = vx_set * (COS_45) + vy_set * (-SIN_45) + wz_set * MOTOR_DISTANCE_TO_CENTER;
-        motor2_set = vx_set * (COS_45) + vy_set * (SIN_45)+ wz_set * MOTOR_DISTANCE_TO_CENTER;
-        motor3_set = vx_set * (-COS_45) + vy_set * (SIN_45)+ wz_set * MOTOR_DISTANCE_TO_CENTER;
-        motor4_set = vx_set * (-COS_45) + vy_set * (-SIN_45)+ wz_set * MOTOR_DISTANCE_TO_CENTER;
+        transform_vector_to_chassis(vx_set, vy_set, yaw_angle, &vx_chassis, &vy_chassis);
     }
-    else if(mode==CHASSIS_VECTOR_NO_FOLLOW_YAW)
-    {
-        motor1_set = vx_set * (COS_45) + vy_set * (-SIN_45) + wz_set * MOTOR_DISTANCE_TO_CENTER;
-        motor2_set = vx_set * (COS_45) + vy_set * (SIN_45) + wz_set * MOTOR_DISTANCE_TO_CENTER;
-        motor3_set = vx_set * (-COS_45) + vy_set * (SIN_45) + wz_set * MOTOR_DISTANCE_TO_CENTER;
-        motor4_set = vx_set * (-COS_45) + vy_set * (-SIN_45) + wz_set * MOTOR_DISTANCE_TO_CENTER;
-    }
-    else if (mode==CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW)
-    {
-        // 云台跟随模式：以云台前方为前方
-        float vx_chassis, vy_chassis;
-        float gimbal_yaw = yaw_angle;
-        
-        // 将云台坐标系的速度转换到底盘坐标系
-        transform_vector_to_chassis(vx_set, vy_set, gimbal_yaw, &vx_chassis, &vy_chassis);
 
-        // 使用转换后的速度进行运动学解算
-        motor1_set = vx_chassis * (COS_45) + vy_chassis * (-SIN_45) + MOTOR_DISTANCE_TO_CENTER * z_set; // 假设 wz_set 是角速度，乘以距离得到线速度
-        motor2_set = vx_chassis * (COS_45) + vy_chassis * (SIN_45) + MOTOR_DISTANCE_TO_CENTER * z_set;
-        motor3_set = vx_chassis * (-COS_45) + vy_chassis * (SIN_45) + MOTOR_DISTANCE_TO_CENTER * z_set;
-        motor4_set = vx_chassis * (-COS_45) + vy_chassis * (-SIN_45) + MOTOR_DISTANCE_TO_CENTER * z_set;
-    }
-    
-
+    /* 实车俯视轮位：ID1 前(12点)、ID2 右(3点)、ID3 后(6点)、ID4 左(9点)。
+     * 前后轮负责左右平移，左右轮负责前后平移；四轮同号叠加旋转。
+     * 6020 正前零点 Ecd=2935；枪口朝车头时，前推为 0,+,0,-，右推为 -,0,+,0。
+     * 保留现有旋转倍率：每轮叠加 0.25 * z_set RPM。 */
+    motor1_set = (int16_t)(-vy_chassis + spin_rpm);
+    motor2_set = (int16_t)( vx_chassis + spin_rpm);
+    motor3_set = (int16_t)( vy_chassis + spin_rpm);
+    motor4_set = (int16_t)(-vx_chassis + spin_rpm);
 
     chassis_speed_out_1 = PID_calc(&chassis_speed_1, chassis_motor_1->speed_rpm, motor1_set);
     chassis_speed_out_2 = PID_calc(&chassis_speed_2, chassis_motor_2->speed_rpm, motor2_set);

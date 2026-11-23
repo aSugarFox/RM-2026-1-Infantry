@@ -35,9 +35,9 @@
 /* Low initial speeds. Tune these only after the direction test passes. */
 #define INFANTRY_CHASSIS_VX_SCALE             1.5f
 #define INFANTRY_CHASSIS_VY_SCALE             1.5f
-/* RC translation polarity: independent of speed magnitude and spin direction. */
-#define INFANTRY_CHASSIS_VX_DIRECTION         (-1.0f)
-#define INFANTRY_CHASSIS_VY_DIRECTION         (-1.0f)
+/* 摇杆前推/右推为正；电机正负方向由实车十字轮位解算确定。 */
+#define INFANTRY_CHASSIS_VX_DIRECTION         (1.0f)
+#define INFANTRY_CHASSIS_VY_DIRECTION         (1.0f)
 #define INFANTRY_CHASSIS_SMALL_GYRO_SPEED     8000.0f /* Old kinematics scale: each wheel adds 0.25 * this rpm. */
 
 /* Left-middle dial (ch[4]): same direction as the old chassis, lower speed. */
