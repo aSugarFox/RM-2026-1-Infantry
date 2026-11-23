@@ -242,7 +242,8 @@ int main(void)
           (age <= 3u * INFANTRY_CHASSIS_IMU_PERIOD_MS));
       debug_tick = now;
       /* Degrees and degrees/s (RPM * 6). Board clocks are independent. */
-      usart6_debug_printf("IMU:t=%lu Gok=%u Gyaw=%.2f Gpitch=%.2f Groll=%.2f Gdps=%.3f Cok=%u Cyaw=%.2f Cpitch=%.2f Croll=%.2f Cdps=%.3f Ct=%lu Cage=%ld\r\n",
+      /* Ecd: raw 0..8191 for front-offset/sign calibration; valid only if Eok=1. */
+      usart6_debug_printf("IMU:t=%lu Gok=%u Gyaw=%.2f Gpitch=%.2f Groll=%.2f Gdps=%.3f Cok=%u Cyaw=%.2f Cpitch=%.2f Croll=%.2f Cdps=%.3f Ct=%lu Cage=%ld Eok=%u Ecd=%u\r\n",
           (unsigned long)now, (unsigned)Infantry_IMU_IsReady(),
           (double)Infantry_IMU_GetYawDeg(), (double)Infantry_IMU_GetPitchDeg(),
           (double)Infantry_IMU_GetRollDeg(), (double)(Infantry_IMU_GetGyroZRpm() * 6.0f),
@@ -250,7 +251,9 @@ int main(void)
           (double)chassis_imu.pitch_angle_deg, (double)chassis_imu.roll_angle_deg,
           (double)(chassis_imu.yaw_rate_rpm * 6.0f),
           (unsigned long)chassis_imu.source_tick,
-          (chassis_imu.update_tick != 0u) ? (long)age : -1L);
+          (chassis_imu.update_tick != 0u) ? (long)age : -1L,
+          (unsigned)CAN_yaw_motor_online(),
+          (unsigned)get_yaw_gimbal_motor_measure_point()->ecd);
     }
 #else
 #if (INFANTRY_SLIPRING_TEST != 0u)
