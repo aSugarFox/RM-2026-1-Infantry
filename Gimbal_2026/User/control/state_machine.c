@@ -22,7 +22,7 @@ void state_machine_init(state_machine_t *sm)
 
 void state_machine_update(state_machine_t *sm, const RC_ctrl_t *rc_data)
 {
-    uint32_t now = HAL_GetTick();
+    uint32_t now;
     uint32_t rc_tick = get_remote_control_update_tick();
     uint8_t rc_alive;
 #if ((INFANTRY_PITCH_CALIBRATION_TEST == 0u) && (INFANTRY_SLIPRING_TEST == 0u))
@@ -37,6 +37,8 @@ void state_machine_update(state_machine_t *sm, const RC_ctrl_t *rc_data)
 
     if ((sm == 0) || (rc_data == 0)) return;
 
+    /* RC and chassis ticks above must be captured before this clock read. */
+    now = HAL_GetTick();
     rc_alive = (uint8_t)((rc_tick != 0u) &&
                          ((uint32_t)(now - rc_tick) <= INFANTRY_LINK_TIMEOUT_MS) &&
                          (RC_data_is_error() == 0u));

@@ -32,9 +32,9 @@ extern DMA_HandleTypeDef hdma_usart1_tx;
 float chassis_rad = 0.0f; // 全局变量存储从底盘接收的角度值
 
 /* Main-loop-only staging, separate from the persistent interrupt TX buffer. */
-static char debug_pending[1024];
+static char debug_pending[1536]; /* Include the shooter speed/current diagnostic line. */
 static uint16_t debug_pending_len;
-static uint8_t debug_active[1024];
+static uint8_t debug_active[1536];
 
 void usart6_debug_printf(const char *format, ...)
 {

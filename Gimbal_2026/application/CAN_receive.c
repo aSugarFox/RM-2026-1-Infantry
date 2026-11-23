@@ -125,22 +125,29 @@ const motor_measure_t *get_chassis_motor_measure_point(uint8_t i) { return &comp
 
 uint8_t CAN_yaw_motor_online(void)
 {
-    return (uint8_t)((yaw_motor.rx_tick != 0u) &&
-                     ((uint32_t)(HAL_GetTick() - yaw_motor.rx_tick) <= INFANTRY_MOTOR_TIMEOUT_MS));
+    uint32_t rx_tick = yaw_motor.rx_tick;
+    uint32_t now = HAL_GetTick();
+    return (uint8_t)((rx_tick != 0u) &&
+                     ((uint32_t)(now - rx_tick) <= INFANTRY_MOTOR_TIMEOUT_MS));
 }
 
 const volatile can_shooter_debug_t *CAN_shooter_get_debug(void) { return &shooter_debug; }
 
 uint8_t CAN_shooter_online_mask(void)
 {
+    /* Snapshot feedback ticks before reading now. An RX interrupt on the next
+     * millisecond must not make now - rx_tick underflow and stop the shooter. */
+    uint32_t trigger_tick = trigger_motor.rx_tick;
+    uint32_t left_tick = fric_left_motor.rx_tick;
+    uint32_t right_tick = fric_right_motor.rx_tick;
     uint32_t now = HAL_GetTick();
     uint8_t mask = 0u;
-    if ((trigger_motor.rx_tick != 0u) &&
-        ((uint32_t)(now - trigger_motor.rx_tick) <= INFANTRY_MOTOR_TIMEOUT_MS)) mask |= 1u;
-    if ((fric_left_motor.rx_tick != 0u) &&
-        ((uint32_t)(now - fric_left_motor.rx_tick) <= INFANTRY_MOTOR_TIMEOUT_MS)) mask |= 2u;
-    if ((fric_right_motor.rx_tick != 0u) &&
-        ((uint32_t)(now - fric_right_motor.rx_tick) <= INFANTRY_MOTOR_TIMEOUT_MS)) mask |= 4u;
+    if ((trigger_tick != 0u) &&
+        ((uint32_t)(now - trigger_tick) <= INFANTRY_MOTOR_TIMEOUT_MS)) mask |= 1u;
+    if ((left_tick != 0u) &&
+        ((uint32_t)(now - left_tick) <= INFANTRY_MOTOR_TIMEOUT_MS)) mask |= 2u;
+    if ((right_tick != 0u) &&
+        ((uint32_t)(now - right_tick) <= INFANTRY_MOTOR_TIMEOUT_MS)) mask |= 4u;
     return mask;
 }
 

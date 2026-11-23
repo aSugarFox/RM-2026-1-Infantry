@@ -25,7 +25,20 @@ float Infantry_Gimbal_GetYawSpeedSet(void);
 /* Values actually used by the current update; zero while disabled/stale. */
 float Infantry_Gimbal_GetChassisYawRate(void);
 float Infantry_Gimbal_GetYawFeedforward(void);
+/* Diagnostic arrays are ordered trigger ID1, left friction ID2, right ID3. */
+typedef struct
+{
+    int16_t target_rpm[3];
+    int16_t actual_rpm[3];
+    int16_t command[3];
+    int16_t feedback_current[3];
+    uint32_t gate_drops;
+    uint8_t mode;
+    uint8_t enabled;
+} infantry_shooter_debug_t;
+
 void Infantry_Shooter_Update(infantry_shoot_mode_e mode, uint8_t enable);
+void Infantry_Shooter_GetDebug(infantry_shooter_debug_t *debug);
 uint8_t Infantry_Gimbal_IsReady(void);
 uint8_t Infantry_Shooter_IsReady(void);
 void Infantry_PitchCalibration_Update(const RC_ctrl_t *rc, uint8_t enable);

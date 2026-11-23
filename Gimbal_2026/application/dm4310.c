@@ -144,8 +144,10 @@ const dm4310_measure_t *DM4310_GetMeasure(void) { return &dm4310; }
 
 uint8_t DM4310_IsOnline(void)
 {
-    return (uint8_t)((dm4310.rx_tick != 0u) &&
-                     ((uint32_t)(HAL_GetTick() - dm4310.rx_tick) <= INFANTRY_MOTOR_TIMEOUT_MS));
+    uint32_t rx_tick = dm4310.rx_tick;
+    uint32_t now = HAL_GetTick();
+    return (uint8_t)((rx_tick != 0u) &&
+                     ((uint32_t)(now - rx_tick) <= INFANTRY_MOTOR_TIMEOUT_MS));
 }
 
 uint8_t DM4310_IsHealthy(void)

@@ -14,6 +14,9 @@ static pid_type_def yaw_speed_pid;
 static pid_type_def fric_left_pid;
 static pid_type_def fric_right_pid;
 static pid_type_def trigger_pid;
+static uint32_t shooter_gate_drops;
+static uint8_t shooter_output_enabled;
+static infantry_shoot_mode_e shooter_effective_mode;
 
 static float yaw_target_deg;
 static float yaw_relative_target_deg;
@@ -199,6 +202,9 @@ void Infantry_Gimbal_Init(void)
              INFANTRY_FRIC_MAX_CURRENT, 1500.0f);
     PID_init(&trigger_pid, PID_POSITION, trigger_param,
              INFANTRY_TRIGGER_MAX_CURRENT, 1000.0f);
+    shooter_gate_drops = 0u;
+    shooter_output_enabled = 0u;
+    shooter_effective_mode = INFANTRY_SHOOT_OFF;
 
     yaw_target_valid = 0u;
     yaw_manual_direction = 0;
@@ -391,6 +397,12 @@ void Infantry_Shooter_Update(infantry_shoot_mode_e mode, uint8_t enable)
     float right_current;
     float trigger_current;
 
+    /* Count readiness loss during output, including an operator left-stop.
+     * A normal right-switch OFF is not a readiness loss. */
+    if ((shooter_output_enabled != 0u) && (enable == 0u)) shooter_gate_drops++;
+    shooter_output_enabled = (uint8_t)((enable != 0u) && (mode != INFANTRY_SHOOT_OFF));
+    shooter_effective_mode = (shooter_output_enabled != 0u) ? mode : INFANTRY_SHOOT_OFF;
+
     if ((enable == 0u) || (mode == INFANTRY_SHOOT_OFF))
     {
         PID_clear(&fric_left_pid);
@@ -414,6 +426,32 @@ void Infantry_Shooter_Update(infantry_shoot_mode_e mode, uint8_t enable)
     right_current = PID_calc(&fric_right_pid, (float)right->speed_rpm, right_set);
     trigger_current = PID_calc(&trigger_pid, (float)trigger->speed_rpm, trigger_set);
     CAN_cmd_shoot((int16_t)left_current, (int16_t)right_current, (int16_t)trigger_current);
+}
+
+void Infantry_Shooter_GetDebug(infantry_shooter_debug_t *debug)
+{
+    const pid_type_def *pids[3] = {&trigger_pid, &fric_left_pid, &fric_right_pid};
+    const motor_measure_t *motors[3] = {get_trigger_motor_measure_point(),
+        get_fric_wheel_left_motor_measure_point(), get_fric_wheel_right_motor_measure_point()};
+    uint32_t primask = __get_PRIMASK();
+    uint8_t i;
+
+    /* Keep rpm and measured-current fields from the same feedback snapshot. */
+    __disable_irq();
+    for (i = 0u; i < 3u; i++)
+    {
+        debug->actual_rpm[i] = motors[i]->speed_rpm;
+        debug->feedback_current[i] = motors[i]->given_current;
+    }
+    if (primask == 0u) __enable_irq();
+    for (i = 0u; i < 3u; i++)
+    {
+        debug->target_rpm[i] = (int16_t)pids[i]->set;
+        debug->command[i] = (int16_t)pids[i]->out;
+    }
+    debug->gate_drops = shooter_gate_drops;
+    debug->enabled = shooter_output_enabled;
+    debug->mode = (uint8_t)shooter_effective_mode;
 }
 
 uint8_t Infantry_Gimbal_IsReady(void)

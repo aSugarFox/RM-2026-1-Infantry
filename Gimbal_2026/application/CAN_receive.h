@@ -10,7 +10,7 @@ typedef struct
     int16_t given_current;
     uint8_t temperate;
     int16_t last_ecd;
-    uint32_t rx_tick;
+    volatile uint32_t rx_tick; /* Published by the CAN RX interrupt. */
 } motor_measure_t;
 
 typedef struct

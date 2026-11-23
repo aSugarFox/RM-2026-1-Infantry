@@ -405,12 +405,22 @@ int main(void)
       {
         const volatile can_shooter_debug_t *shot = CAN_shooter_get_debug();
         uint8_t online = CAN_shooter_online_mask();
+        infantry_shooter_debug_t speed;
+        Infantry_Shooter_GetDebug(&speed);
         usart6_debug_printf("SHOT:Rsw=%u mode=%u T=%u L=%u R=%u rx=%lu ids=0x%02X last=0x%03X fail=%lu esr=0x%08lX\r\n",
             (unsigned)rc_data->rc.s[RC_S_RIGHT], (unsigned)g_state_machine.launcher_mode,
             (unsigned)((online & 1u) != 0u), (unsigned)((online & 2u) != 0u),
             (unsigned)((online & 4u) != 0u), (unsigned long)shot->rx_frames,
             (unsigned)shot->seen_ids, (unsigned)shot->last_rx_id,
             (unsigned long)shot->tx_failed, (unsigned long)hcan1.Instance->ESR);
+        /* All triples: trigger ID1, left ID2, right ID3; currents are raw CAN units. */
+        usart6_debug_printf("SPD:en=%u mode=%u gate=%lu set=%d,%d,%d rpm=%d,%d,%d cmd=%d,%d,%d fb=%d,%d,%d lim=%d,%d,%d\r\n",
+            (unsigned)speed.enabled, (unsigned)speed.mode, (unsigned long)speed.gate_drops,
+            (int)speed.target_rpm[0], (int)speed.target_rpm[1], (int)speed.target_rpm[2],
+            (int)speed.actual_rpm[0], (int)speed.actual_rpm[1], (int)speed.actual_rpm[2],
+            (int)speed.command[0], (int)speed.command[1], (int)speed.command[2],
+            (int)speed.feedback_current[0], (int)speed.feedback_current[1], (int)speed.feedback_current[2],
+            (int)INFANTRY_TRIGGER_MAX_CURRENT, (int)INFANTRY_FRIC_MAX_CURRENT, (int)INFANTRY_FRIC_MAX_CURRENT);
       }
       usart6_debug_printf("DM:rx=%lu last=0x%03X master=0x%03X ctrl=%u txfail=%lu stop=%u phase=%u limits=%.4f..%.4f\r\n",
           (unsigned long)dm_debug->rx_frames, (unsigned)dm_debug->last_rx_id,
