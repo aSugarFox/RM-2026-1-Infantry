@@ -84,11 +84,11 @@
 /* Conservative first-run gimbal and shooter parameters. */
 #define INFANTRY_YAW_MOTOR_DIRECTION           1.0f /* Positive motor output -> positive IMU yaw. */
 #define INFANTRY_YAW_MAX_LEAD_DEG              5.0f /* Manual target lead and angle-loop error limit; idle target stays fixed. */
-#define INFANTRY_YAW_RC_SPEED_DPS             86.0f /* Full stick: 36 deg/s. */
+#define INFANTRY_YAW_RC_SPEED_DPS             186.0f /* Full stick: 36 deg/s. */
 #define INFANTRY_YAW_ANGLE_KP                 8.0f
 #define INFANTRY_YAW_ANGLE_KI                 0.0f
 #define INFANTRY_YAW_ANGLE_KD                 0.2f
-#define INFANTRY_YAW_MAX_SPEED_RPM            10.0f /* Absolute gimbal rate ceiling: 60 deg/s. */
+#define INFANTRY_YAW_MAX_SPEED_RPM            30.0f /* Absolute gimbal rate ceiling: 60 deg/s. */
 #define INFANTRY_YAW_SPEED_KP                 500.0f /* Stronger proportional response at low RPM. */
 #define INFANTRY_YAW_SPEED_KI                 0.55f
 #define INFANTRY_YAW_MAX_INTEGRAL             3000.0f /* Limit residual drive when changing direction. */
@@ -97,10 +97,10 @@
 /* Initial estimate from spin logs: command 10000 gives about 40 motor RPM. */
 #define INFANTRY_YAW_CHASSIS_FF_PER_RPM       250.0f
 
-#define INFANTRY_FRIC_SPEED_RPM               1500.0f
+#define INFANTRY_FRIC_SPEED_RPM               8500.0f
 #define INFANTRY_FRIC_LEFT_DIRECTION          -1.0f
 #define INFANTRY_FRIC_RIGHT_DIRECTION         1.0f
-#define INFANTRY_TRIGGER_FORWARD_RPM          1500.0f
+#define INFANTRY_TRIGGER_FORWARD_RPM          3000.0f
 #define INFANTRY_TRIGGER_REVERSE_RPM          800.0f
 #define INFANTRY_TRIGGER_DIRECTION            1.0f
 #define INFANTRY_TRIGGER_REVERSE_MS           1000u

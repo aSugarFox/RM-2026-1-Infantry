@@ -41,7 +41,7 @@
 #define INFANTRY_CHASSIS_SMALL_GYRO_SPEED     8000.0f /* Old kinematics scale: each wheel adds 0.25 * this rpm. */
 
 /* Left-middle dial (ch[4]): same direction as the old chassis, lower speed. */
-#define INFANTRY_CHASSIS_DIAL_SCALE         2.0f /* Full dial: wheel target 165 rpm. */
+#define INFANTRY_CHASSIS_DIAL_SCALE         6.0f /* Full dial: wheel target 165 rpm. */
 
 /* Restore the reference chassis speed-loop proportional gains.
  * Keep the existing 2 ms loop, integral gains, speed and current limits. */
