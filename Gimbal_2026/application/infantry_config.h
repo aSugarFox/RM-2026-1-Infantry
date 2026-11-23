@@ -112,6 +112,8 @@
 #define INFANTRY_DEBUG_PERIOD_MS              200u
 /* 1: only dual-IMU telemetry; 0: restore LINK/MOVE/SYS/YAW/SHOT/DM. */
 #define INFANTRY_DEBUG_IMU_ONLY               1u
+/* Temporarily append chassis direction feedback to the IMU log. */
+#define INFANTRY_DEBUG_DRIVE_DIRECTION        1u
 /* Vision offsets are signed centi-degrees. */
 #define INFANTRY_VISION_TIMEOUT_MS             120u
 #define INFANTRY_VISION_YAW_GAIN               0.01f

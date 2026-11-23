@@ -227,6 +227,11 @@ int main(void)
     if ((uint32_t)(HAL_GetTick() - debug_tick) >= INFANTRY_DEBUG_PERIOD_MS)
     {
       usart1_chassis_imu_t chassis_imu;
+#if (INFANTRY_DEBUG_DRIVE_DIRECTION != 0u)
+      usart1_chassis_motion_t motion;
+      usart1_chassis_status_t chassis_status;
+      uint32_t chassis_status_tick;
+#endif
       uint32_t primask = __get_PRIMASK();
       uint32_t now;
       uint32_t age;
@@ -234,6 +239,11 @@ int main(void)
       /* The RX ISR owns this sample; copy it before formatting text. */
       __disable_irq();
       chassis_imu = *get_usart1_chassis_imu();
+#if (INFANTRY_DEBUG_DRIVE_DIRECTION != 0u)
+      motion = *get_usart1_chassis_motion();
+      chassis_status = *get_usart1_chassis_status();
+      chassis_status_tick = get_usart1_chassis_status_update_tick();
+#endif
       if (primask == 0u) __enable_irq();
       now = HAL_GetTick();
       age = (uint32_t)(now - chassis_imu.update_tick);
@@ -254,6 +264,22 @@ int main(void)
           (chassis_imu.update_tick != 0u) ? (long)age : -1L,
           (unsigned)CAN_yaw_motor_online(),
           (unsigned)get_yaw_gimbal_motor_measure_point()->ecd);
+#if (INFANTRY_DEBUG_DRIVE_DIRECTION != 0u)
+      {
+        unsigned fresh = (unsigned)((motion.update_tick != 0u) &&
+            ((uint32_t)(now - motion.update_tick) <= 3u * INFANTRY_CHASSIS_MOTION_PERIOD_MS) &&
+            (chassis_status_tick != 0u) &&
+            ((uint32_t)(now - chassis_status_tick) <= INFANTRY_LINK_TIMEOUT_MS));
+        usart6_debug_printf("DRIVE:ok=%u en=%u ch2=%d ch3=%d dial=%d rel=%.2f set=%d,%d,%d,%d rpm=%d,%d,%d,%d\r\n",
+            fresh, fresh && ((chassis_status.flags & INFANTRY_CHASSIS_FLAG_ENABLED) != 0u),
+            (int)chassis_status.remote_ch2, (int)chassis_status.remote_ch3,
+            (int)rc_data->rc.ch[4], (double)motion.relative_yaw_deg,
+            (int)motion.target_rpm[0], (int)motion.target_rpm[1],
+            (int)motion.target_rpm[2], (int)motion.target_rpm[3],
+            (int)motion.actual_rpm[0], (int)motion.actual_rpm[1],
+            (int)motion.actual_rpm[2], (int)motion.actual_rpm[3]);
+      }
+#endif
     }
 #else
 #if (INFANTRY_SLIPRING_TEST != 0u)
